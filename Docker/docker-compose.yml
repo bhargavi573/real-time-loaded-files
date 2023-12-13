@@ -1,0 +1,293 @@
+version: "3.9"
+
+services:
+
+  mysql:
+    image: mysql:8.0.27
+    container_name: mysql
+    restart: unless-stopped
+    volumes:
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
+      - ./data/mysql:/var/lib/mysql
+      - ./mysql/mysql-files:/var/lib/mysql-files
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    networks:
+      - openedx-network
+    healthcheck:
+      test: "mysql --user=root --password=$$MYSQL_ROOT_PASSWORD --execute \"SHOW DATABASES;\""
+      interval: 2s
+      timeout: 20s
+      retries: 10
+
+
+  mongodb:
+    image: docker.io/mongo:4.4.22
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    command: mongod --storageEngine wiredTiger --bind_ip_all --auth --quiet
+    restart: unless-stopped
+    volumes:
+      - ./data/mongo/db:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - openedx-network
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 64000
+        hard: 64000
+    sysctls:
+      net.core.somaxconn: 65535
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "printjson(db.adminCommand('ping'))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  elasticsearch:
+    image: docker.io/elasticsearch:7.17.9
+    container_name: elasticsearch
+    environment:
+      - cluster.name=openedx
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"  # heap memory sizes to 2 GB. Adjust it to available RAM
+      - "MAX_LOCKED_MEMORY=unlimited"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: unless-stopped
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - openedx-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: docker.io/redis:7.0.11
+    container_name: redis
+    working_dir: /openedx/redis/data
+    volumes:
+      - ./redis/redis.conf:/openedx/redis/config/redis.conf:ro
+      - ./data/redis:/openedx/redis/data
+    command: redis-server /openedx/redis/config/redis.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - openedx-network
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  forum:
+    image: forum
+    container_name: forum
+    environment:
+      SEARCH_SERVER: "http://10.1.0.5:9200"
+      MONGODB_AUTH: "admin:password@"
+      MONGODB_HOST: "10.1.0.5"
+      MONGODB_PORT: "27017"
+      MONGODB_DATABASE: "cs_comments_service"
+      MONGOID_AUTH_SOURCE: "admin"
+      MONGOID_AUTH_MECH: ""
+      MONGOID_USE_SSL: "false"
+      RAILS_ENV: "production"
+    volumes:
+      - ./forum/cs_comments_service:/app/cs_comments_service
+    ports:
+      - "4567:4567"
+    networks:
+      - openedx-network
+    restart: unless-stopped
+
+  lms:
+    image: openedx
+    container_name: lms
+    environment:
+      SERVICE_VARIANT: lms
+      DJANGO_SETTINGS_MODULE: lms.envs.skillup.production
+      UWSGI_WORKERS: 2
+    restart: unless-stopped
+    volumes:
+      - ./openedx/settings/lms:/openedx/edx-platform/lms/envs/skillup
+      - ./openedx/settings/cms:/openedx/edx-platform/cms/envs/skillup
+      - ./openedx/config:/openedx/config
+      - ./openedx/lms/uwsgi.ini:/openedx/edx-platform/uwsgi.ini
+      - ./data/lms:/openedx/data
+      - ./data/openedx-media:/openedx/media
+      - ./openedx/edx-platform:/openedx/edx-platform
+      - ./openedx/themes:/openedx/themes
+    ports:
+      - "8000:8000"
+    networks:
+      - openedx-network
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc:
+        soft: 4096
+        hard: 4096
+    sysctls:
+      net.core.somaxconn: 65535
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cms:
+    image: openedx
+    container_name: cms
+    environment:
+      SERVICE_VARIANT: cms
+      DJANGO_SETTINGS_MODULE: cms.envs.skillup.production
+      UWSGI_WORKERS: 2
+    restart: unless-stopped
+    volumes:
+      - ./openedx/settings/lms:/openedx/edx-platform/lms/envs/skillup
+      - ./openedx/settings/cms:/openedx/edx-platform/cms/envs/skillup
+      - ./openedx/config:/openedx/config
+      - ./openedx/cms/uwsgi.ini:/openedx/edx-platform/uwsgi.ini
+      - ./data/cms:/openedx/data
+      - ./data/openedx-media:/openedx/media
+      - ./openedx/edx-platform:/openedx/edx-platform
+    ports:
+      - "8001:8001"
+    networks:
+      - openedx-network
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc:
+        soft: 4096
+        hard: 4096
+    sysctls:
+      net.core.somaxconn: 65535
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  lms-worker:
+    image: openedx
+    container_name: lms-worker
+    environment:
+      SERVICE_VARIANT: lms
+      DJANGO_SETTINGS_MODULE: lms.envs.skillup.production
+    command: celery --app=lms.celery worker --loglevel=info --hostname=edx.lms.core.default.%%h --max-tasks-per-child 100 --exclude-queues=edx.cms.core.default
+    restart: unless-stopped
+    volumes:
+      - ./openedx/settings/lms:/openedx/edx-platform/lms/envs/skillup
+      - ./openedx/settings/cms:/openedx/edx-platform/cms/envs/skillup
+      - ./openedx/config:/openedx/config
+      - ./data/cms:/openedx/data
+      - ./data/openedx-media:/openedx/media
+    healthcheck:
+      test: ["CMD", "celery", "--app=lms.celery", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cms-worker:
+    image: openedx
+    container_name: cms-worker
+    environment:
+      SERVICE_VARIANT: cms
+      DJANGO_SETTINGS_MODULE: cms.envs.skillup.production
+    command: celery --app=cms.celery worker --loglevel=info --hostname=edx.cms.core.default.%%h --max-tasks-per-child 100 --exclude-queues=edx.lms.core.default
+    restart: unless-stopped
+    volumes:
+      - ./openedx/settings/lms:/openedx/edx-platform/lms/envs/skillup
+      - ./openedx/settings/cms:/openedx/edx-platform/cms/envs/skillup
+      - ./openedx/config:/openedx/config
+      - ./data/cms:/openedx/data
+      - ./data/openedx-media:/openedx/media
+    healthcheck:
+      test: ["CMD", "celery", "--app=cms.celery", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  discovery:
+    image: discovery
+    container_name: discovery
+    environment:
+      DJANGO_SETTINGS_MODULE: course_discovery.settings.skillup.production
+    restart: unless-stopped
+    volumes:
+      - ./discovery/settings/skillup:/openedx/discovery/course_discovery/settings/skillup
+      - ./discovery/discovery:/openedx/discovery
+    ports:
+      - "8002:8002"
+    networks:
+      - openedx-network
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8002"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ecommerce:
+    image: ecommerce
+    environment:
+      DJANGO_SETTINGS_MODULE: ecommerce.settings.skillup.production
+    restart: unless-stopped
+    volumes:
+      - ./ecommerce/apps/ecommerce/settings:/openedx/ecommerce/ecommerce/settings/skillup
+      - ./ecommerce/ecommerce:/openedx/ecommerce
+    ports:
+      - "8003:8003"
+    networks:
+      - openedx-network
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8003"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ecommerce-worker:
+    image: ecommerce-worker
+    environment:
+      WORKER_CONFIGURATION_MODULE: ecommerce_worker.configuration.skillup.production
+    restart: unless-stopped
+    volumes:
+      - ./ecommerce/apps/ecommerce-worker/settings:/openedx/ecommerce_worker/ecommerce_worker/configuration/skillup
+      - ./ecommerce/ecommerce-worker:/openedx/ecommerce_worker
+    networks:
+      - openedx-network
+    healthcheck:
+      test: ["CMD", "celery", "--app=ecommerce_worker.celery_app:app", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+networks:
+  openedx-network:
+    driver: bridge
