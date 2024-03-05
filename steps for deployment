@@ -1,0 +1,550 @@
+BE:
+ssh edx-root@sko-prod-cluster3.westus2.cloudapp.azure.com    -- BE Prod
+
+cluster -1
+------------
+sudo su -s /bin/bash edxapp
+cd
+cd edx-platform/
+git pull
+cd ../themes/Openedx-theme 
+git pull
+cd ../Openedx-theme-ironwood-india/
+git pull
+exit
+/edx/bin/edxapp-update-assets && /edx/bin/supervisorctl restart all
+/edx/bin/supervisorctl status all
+
+Bhargaviskillup
+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 - passwd
+
+cluster -2 & 3 
+-----------------
+sudo su -s /bin/bash edxapp
+cd
+cd edx-platform/
+git pull
+cd ../themes/Openedx-theme 
+git pull
+cd ../Openedx-theme-ironwood-india/
+git pull
+exit
+/edx/bin/supervisorctl restart all
+/edx/bin/supervisorctl status all
+
+check all three clusters in the azure portal
+
+
+
+
+--------------- END BE DEPLOYMENT------------------------
+--------------- END BE DEPLOYMENT------------------------
+In Cluster 3 
+
+For ecommerce Deployment
+
+sudo su -s /bin/bash ecommerce
+
+cd ecommerce
+git pull
+cd ecommerce-theme
+git pull
+-----------------------------------------------------------------
+
+sudo -u edxapp /edx/bin/python.edxapp /edx/app/edxapp/edx-platform/manage.py lms --settings=production cache_programs  ----clear the cache in BE
+------------------------------------------------------------------------------------
+SK-4895  deployed in sprint 50
+this is working fine for Stage,
+
+but needs to deploy on prod with our next sprint release. 
+
+cc @Dineshgouda  @Salu Bhargavi  please ensure it should deploy - sprint 50
+--------------------------------------------------------------------------------
+------------------- FOR ECOMMERCE DEPLOYMENT----------------------
+------------------- FOR ECOMMERCE DEPLOYMENT----------------------
+
+
+
+FOR FRONT END 
+
+1. need to enable Maintebabce mode.
+
+cd /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/fe_in_maintenance /etc/nginx/sites-enabled/ 
+sudo ln -s /etc/nginx/sites-available/fe_us_maintenance /etc/nginx/sites-enabled/
+cd /etc/nginx/sites-enabled/
+sudo unlink nextjs
+sudo unlink skillup-us
+sudo service nginx restart
+cd /var/www/nextjs/skillup-nextjs/
+
+---------------------------------------------------------------------------------------
+
+Remove the India & Us page from Nginx
+
+cd /etc/nginx/sites-enabled/ 
+sudo unlink nextjs 
+sudo unlink skillup-us
+
+
+retart nginx service 
+
+sudo service nginx restart 
+cd /var/www/nextjs/skillup-nextjs/
+--------------------------------------------------------------------------------------
+
+2. update code 
+
+git branch 
+git branch -d backup-20231213
+git checkout -b backup-20240123
+git switch main
+git pull 
+
+Bhargaviskillup
+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 -- passwd
+
+git status 
+sudo supervisorctl stop all
+npm run update                             # (This step added for Json Update)
+npm run build                              #(make sure there is no build error) 
+cd /var/www/nextjs/nextjs-us/ 
+git branch 
+git branch -d backup-20231207
+git checkout -b backup-20240220
+git switch main
+git pull 
+git status 
+npm run update                             (This step added for Json Update)
+npm run build                              {Make sure there is no build error.} 
+sudo supervisorctl start all
+
+3 . create symlink for nginx 
+
+cd /etc/nginx/sites-available/ 
+sudo ln -s /etc/nginx/sites-available/nextjs /etc/nginx/sites-enabled/ 
+sudo ln -s /etc/nginx/sites-available/skillup-us /etc/nginx/sites-enabled/
+cd /etc/nginx/sites-enabled/ 
+sudo unlink fe_in_maintenance 
+sudo unlink fe_us_maintenance
+sudo service nginx restart
+
+-------------------------------------------------------------------
+
+test sites 
+
+in.skillup.online   ----------- india
+skillup.online      ----------- us
+
+------------------- FOR FRONT END DEPLOYMENT----------------------
+------------------- FOR FRONT END DEPLOYMENT----------------------
+
+FE prod admin
+
+cd /var/www/SKO_common_django
+git branch
+git pull
+git status
+sudo service gunicorn restart
+sudo service gunicorn status
+
+
+
+----------------------------------------------------------------------
+---------------------------------------------------------------------
+how to restart and check the services in BE stage
+
+/edx/bin/supervisorctl restart all
+/edx/bin/supervisorctl status all
+
+   tail -f /edx/var/log/lms/edx.log
+   tail -f /edx/var/log/cms/edx.log
+
+   cd
+   tail -f /edx/var/log/cms/edx.log
+   sudo supervisorctl status all
+   sudo supervisor status all
+   sudo /edx/bin/supervisorctl restart all
+   sudo /edx/bin/supervisorctl status all
+   sudo nginx -t
+   Sudo service nginx restart
+   sudo service nginx restart
+   sudo service mongo restart
+   sudo service mongodb restart
+   cd /etc/
+   ll
+   cd systemd/
+   ll
+   cd system/
+   sudo service mongod restart
+
+-----------------------------------------------------------------------------------------
+
+122.173.142.156  - 20/2/2024 my ip
+
+https://github.com/SkillUpTech/stage-theme-ironwood
+
+
+====================================================================================================
+
+
+FE changes by RIcardo, satish
+dev chnages by vinay ( 
+dev changes by Raj( penedx/theme-IN & US), ecomm-themes-IN & US
+cluster2 lms
+
+FE deployment
+BE deployment
+BE - openedx-theme lms changes
+     both IN & Us
+	 ecom-theme chanages both IN & US in cluster3
+
+
+
+sudo -u discovery bash << EOF
+cd /edx/app/discovery/
+source /edx/app/discovery/discovery_env
+cd /edx/app/discovery/discovery/
+python manage.py refresh_course_metadata
+yes | python manage.py rebuild_index
+python manage.py update_index --disable-change-limit
+EOF
+
+
+===========================================================================
+COMMANDS:
+
+
+ls -lrt -------------- to check latest file 
+ls lct --------------- to check oldtest file 
+ll |wc -l --------------- to count list of files in pwd 
+cd ~     ------------ to go home of user path
+cd -  ----------- go to the before path
+ls file name---- to know about the file it is there or not
+ll filename -------- to know about all the details aout file
+find . -name logfile------- to find a file
+tail -f /edx/var/log/cms/edx.log
+
+ sudo find . -type f -exec sed -i 's/10.1.0.5/10.1.0.4/g' {} +  === to change the ip at a time 
+
+==========================================================================
+
+vi commands 
+vim ------------- to open the file/ edit the file
+:set nu--------- the set the lines to the file
+/symbolic----- it means to sreach strin/word
+?n/m/w----- to check alaphabetical wise 
+:1234-------to go through the numbers which selected numbers
+
+=========================================================================
+
+services status check
+
+cms ---------- /edx/bin/supervisorctl status cms
+               /edx/bin/supervisorctl stop cms
+               /edx/bin/supervisorctl start cms
+               /edx/bin/supervisorctl restart cms 
+			   
+Gingko version ---------- /edx/bin/supervisorctl restart edxapp: 
+For Hawthorn/Ironwood Version: 
+                                 
+                         /edx/bin/supervisorctl restart lms 
+                        /edx/bin/supervisorctl restart cms 
+						
+	for checking running or not ------/edx/bin/supervisorctl status all
+======================================================================
+			
+update lms and cms(assets)
+		   
+		   /edx/bin/edxapp-update-assets-lms  
+           /edx/bin/edxapp-update-assets-cms 
+		   
+For Hawthorn/Ironwood Version
+
+           /edx/bin/edxapp-update-assets 	
+=====================================================================
+how to change user passwd
+
+sudo -Hsu edxapp 
+cd ~ 
+source edxapp_env 
+cd edx-platform 
+python manage.py lms changepassword <USERNAME> -- it will ask confirmation two times
+python manage.py lms shell ----- by using email to change passwd
+
+======================================================================
+for cms:
+
+
+Reindex course from command line 
+Courses can also be reindex from command line as follows: 
+
+  reindex all coureses------sudo su -s /bin/bash edxapp 
+                            cd 
+                            source edxapp_env 
+                           
+						   cd edx-platform/ 
+						
+Command for Ironwood ---					   
+
+                       python manage.py cms reindex_course --all --settings=production 
+Command for Gingko ----
+
+                       python manage.py cms reindex_course --all --settings=aws 
+					   
+Note: Re-indexing all courses can take a lot of time. For example, for 150 courses, it took around 50 mins. 
+
+ Reindex specific course/courses 
+
+                        sudo su -s /bin/bash edxapp 
+
+                        cd 
+
+                        source edxapp_env 
+
+                        cd edx-platform/ 
+
+                        python manage.py cms reindex_course <course_id_1> <course_id_2> 
+						(this above command will indicate keys course-id-1,course-id-2
+
+====================================================================================================						
+						
+
+
+	lms.. be and fe purpose
+	ecom.. django--where you can do all the transactions
+	courses and programs--- artificial 
+	data programs---devops
+	one course part of two diff programs---
+
+====================================================================================================
+	SWAP AND RAM
+---------------
+	sudo swapon –show 
+
+	sudo fallocate -l 4G /swapfile 
+
+	sudo chmod 600 /swapfile 
+
+	sudo mkswap /swapfile 
+
+	sudo swapon /swapfile 
+
+	sudo swapon –show 
+
+	echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab 
+
+	sudo sysctl vm.swappiness=10 
+
+=====================================================
+	sudo vim /etc/sysctl.conf 
+	swapon --show
+
+	to create a swap file
+---------------------
+	sudo fallocate -l 4G /swapfile
+	sudo chmod 600 /swapfile
+	sudo mkswap /swapfile
+
+
+enable the swap file
+--------------------- 
+sudo swapon /swapfile
+
+Make the Swap File Permanent:
+-----------------------------
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+Adjust Swappiness (Optional):
+-------------------------------
+vm.swappiness=10
+
+
+==================================================================================
+Backup by using linux server:
+
+rsync --dry-run --verbose source/ destination/
+
+Check Backup Status with rsync Command:
+rsync --dry-run --verbose source/ destination/
+
+Check Backup Status with tar Command:
+tar -tvf backupfile.tar.gz
+
+Check Backup Status with grep Command:
+grep "Error" /var/log/backup.log
+
+Check Backup Status with systemctl (For Systemd Services):
+systemctl status backup-service-name
+df -h
+Check Log Files:
+tail -n 100 /var/log/syslog
+Check Cron Jobs:
+crontab -l
+=======================================================
+
+ top
+  170  free -m
+  171  df -h
+  172  du -sch /*
+  173  sudo du -sch /
+  174  df -ih
+  175  df -i
+  176  df -ih
+  177  sudo du -sh /
+  178  cd /
+  179  sudo du -sh *
+  180  h top
+  181  htop
+  182  ps
+  183  ps -eaf
+  184  lscpu--- Look for the line that starts with "Core(s) per socket" or "Core(s) per CPU".
+                    This line indicates the number of cores per CPU socket.
+  185  lscpu |wc -l
+  186  top
+  187  last -x |grep reboot |head -n 5
+  188  w
+  189  uptime
+  
+  
+  
+  
+  ======================================================
+  "w" command:
+  
+Header Information:
+
+The current time.
+System uptime.
+The number of users logged in.
+System load averages for the past 1, 5, and 15 minutes.
+ 
+ example:  22:45:12 up 10 days,  3:27,  4 users,  load average: 0.02, 0.12, 0.20
+
+User Information:
+
+The list of currently logged-in users.
+Details about their sessions, including:
+Usernames.
+Terminal or session they are using (e.g., pts/0 for pseudo-terminals).
+Remote host or IP address if logged in remotely.
+Login time (when the session started).
+Idle time (how long the session has been idle).
+
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+user1    pts/0    192.168.1.10     20:30    1:20m  0.12s  0.12s -bash
+user2    pts/1    :0.0             21:15   10:11   0.23s  0.02s sshd: user2
+
+
+USER: Username of the logged-in user.
+TTY: Terminal device or session (pseudo-terminal).
+FROM: Remote IP address or hostname from where the user is logged in.
+LOGIN@: Time when the user logged in.
+IDLE: Idle time since the last activity.
+JCPU: Total CPU time used by all processes attached to the terminal since login.
+PCPU: Total CPU time used by the current process in seconds.
+WHAT: Currently running command or activity of the user.
+
+ --------------------------------------------------------------------------------
+
+how add a user in ubuntu:
+
+ sudo adduser Bhagi
+  464  sudo adduser bhagi
+  465  usermod -aG sudo bhagi
+  466  sudo usermod -aG sudo bhagi
+  467  groups bhagi
+  468  su - bhagi
+  469  cp -r ~/.ssh/ /home/bhagi/
+  470  su - bhagi
+  471  cd 
+
+ ===============================================================
+ 
+   scp -r ecommerce-themes edx-root@sko-palm-dev.westus2.cloudapp.azure.com:/home/azureuser/sko-docker/openedx-prod-docker/ecommerce/
+			   
+
+
+==================================================
+how we can check the logs in BE- the below commands
+
+ tail -f /edx/var/log/lms/edx.log
+ 2007  tail -f /edx/var/log/cms/edx.log
+ 2008  cd
+ 2009  tail -f /edx/var/log/cms/edx.log
+ 2010  sudo supervisorctl status all
+ 2011  sudo supervisor status all
+ 2012  sudo /edx/bin/supervisorctl restart all
+ 2013  sudo /edx/bin/supervisorctl status all
+ 2014  sudo nginx -t
+ 2015  Sudo service nginx restart
+ 2016  sudo service nginx restart
+ 2017  sudo service mongo restart
+ 2018  sudo service mongodb restart
+ 2019  cd /etc/
+ 2020  ll
+ 2021  cd systemd/
+ 2022  ll
+ 2023  cd system/
+ 2024  l
+ 2025  sudo service mongod restart
+ 
+ ----------------------------------------------------------------------------
+ this are the mysql credentials on stage BE:
+ 
+  "ATOMIC_REQUESTS": true,
+      "CONN_MAX_AGE": 600,
+      "ENGINE": "django.db.backends.mysql",
+      "HOST": "10.2.0.10",
+      "NAME": "edxapp",
+      "OPTIONS": {},
+      "PASSWORD": "Skillup@123",
+      "PORT": "3306",
+      "USER": "root"
+	  
+	=====================================================================================
+branching strategies
+------------------------
+
+why this branching stratagies are required. We can prevent the build failures and 
+prevent the blocking or critical issues. and we can make the deployments and releases smoothly..
+
+main/master 2.0 --> latest stable cod/shippable is there in this branch.Always the
+ latest release is freezed from the main branch.
+sprint(2/3)-- full release --(it contains multiple sprints.---release1.0)
+
+dev/feature --> Here every developer create their own feture or dev branch.
+ In that they can do their own developemtn like 
+modify the code, delete the code and add the new code. once it is done. 
+then they can compile the code in his dev environment and 
+he can execute the test case. and make sure this should not be breakable.
+Release 1,0 --> in prod if any issue comes. Prod team will raise the jira 
+ticket with critical/blocking. This will automatically assigned to respective prime or developer.
+
+Hotfix --> He can create hot fix branch. Then he can fix the issue with priority. 
+Then he can do the build and test. Once every thing is working 
+raise pr then he can merger based on the approve.
+bugfix -->(dev/staging/qa/sqa/)-->For the internal issue they can use the bug fix.
+test --> THis is for only test cases execution...(Fuctional/regration/quality test/security)
+
+ 
+ 
+ 
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
